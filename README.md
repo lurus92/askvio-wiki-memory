@@ -1,14 +1,16 @@
-# Cognee Hackathons
+# Cognee Hackathons — AskVio Fork
 
-This repository is the home of Cognee's hackathon events. Each hackathon lives
-in its own subfolder and contains everything needed to participate: the
-challenge brief, setup instructions, starter skills or templates, examples,
-and a submission template.
+This is Team AskVio's fork of the [Cognee hackathons repo](https://github.com/topoteretes/cognee-hackathons) for the **Cognee × Redis AI-Memory Hackathon (2026-05-16)**.
 
-Cognee is an open-source AI memory platform that transforms raw data into
-persistent knowledge graphs for AI agents. Our hackathons invite builders to
-push that idea further — composing memory, agents, and tooling into systems
-that learn, remember, and improve over time.
+Our project — **AskVio Wiki Memory** — lives in [`cognee-redis-hackathon-2026-05-16/askvio-wiki/`](./cognee-redis-hackathon-2026-05-16/askvio-wiki/).
+
+## What We Built
+
+A living knowledge wiki for AskVio's product documentation. Instead of the standard RAG approach (embed chunks → retrieve top-k), we pre-digest HTML help-center pages into structured wiki entries using Cognee's memory engine, with Redis as the session-memory scratchpad.
+
+The wiki improves itself: every low-scoring answer triggers a skill rewrite proposal via Cognee's `SkillRunEntry` loop. The lint step keeps the graph coherent.
+
+**The "cherry on top":** `compare.py` runs the same questions against both the wiki (graph retrieval) and a raw vector baseline (chunk retrieval), scores both with an LLM judge, and prints a side-by-side benchmark.
 
 ## Hackathons
 
@@ -16,28 +18,22 @@ that learn, remember, and improve over time.
 |------|-----------|---------|--------|
 | 2026-05-16 | AI-Memory Hackathon: Building your own Agent LLM Wiki | Redis | [`cognee-redis-hackathon-2026-05-16`](./cognee-redis-hackathon-2026-05-16) |
 
-## Repository Layout
+## Quick Start
 
-Each hackathon folder follows the same structure:
-
-```text
-<hackathon-name>-<YYYY-MM-DD>/
-  README.md         # event overview, setup, schedule, prizes
-  challenge/        # detailed challenge brief
-  skills/           # starter skills or scaffolding
-  templates/        # submission template
-  examples/         # reference implementations or before/after examples
+```bash
+cd cognee-redis-hackathon-2026-05-16/askvio-wiki
+uv venv && source .venv/bin/activate
+uv pip install -r requirements.txt
+cp .env.template .env          # add LLM_API_KEY
+docker run -p 6379:6379 redis:latest
+streamlit run src/app.py
 ```
 
-## Participating
-
-1. Pick the hackathon folder for the event you are joining.
-2. Read its `README.md` for setup, schedule, and judging criteria.
-3. Follow the quickstart to get Cognee and the partner tools running locally.
-4. Build, demo, and submit using the template in `templates/`.
+See the [project README](./cognee-redis-hackathon-2026-05-16/askvio-wiki/README.md) for full details.
 
 ## Links
 
 - [Cognee on GitHub](https://github.com/topoteretes/cognee)
 - [Cognee Documentation](https://docs.cognee.ai/)
-- [Discord Community](https://discord.gg/NQPKmU5CCg)
+- [Karpathy on LLM Wikis](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
+- [AskVio](https://askvio.com)

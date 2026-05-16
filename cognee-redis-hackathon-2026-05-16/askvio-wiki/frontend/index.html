@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AskVio Wiki Memory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ── Variables ─────────────────────────────────────────────────────────── */
+    :root {
+      --bg:           #0b0b12;
+      --surface:      #111120;
+      --card:         #16162a;
+      --border:       #232340;
+      --border-light: #2e2e52;
+
+      --wiki:         #8b5cf6;
+      --wiki-l:       #a78bfa;
+      --wiki-glow:    rgba(139,92,246,.13);
+      --wiki-border:  rgba(139,92,246,.35);
+
+      --vec:          #3b82f6;
+      --vec-l:        #60a5fa;
+      --vec-glow:     rgba(59,130,246,.12);
+      --vec-border:   rgba(59,130,246,.3);
+
+      --green:        #10b981;
+      --green-glow:   rgba(16,185,129,.12);
+      --amber:        #f59e0b;
+      --pink:         #ec4899;
+
+      --text:         #e2e8f0;
+      --muted:        #64748b;
+      --faint:        #1e1e38;
+    }
+
+    /* ── Reset ─────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 13px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    button { font-family: inherit; cursor: pointer; }
+    input, textarea { font-family: inherit; }
+
+    /* ── Scrollbar ─────────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Utilities ─────────────────────────────────────────────────────────── */
+    .hidden { display: none !important; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .gap-8 { gap: 8px; }
+    .gap-12 { gap: 12px; }
+    .w-full { width: 100%; }
+    .text-muted { color: var(--muted); }
+    .text-wiki { color: var(--wiki-l); }
+    .text-vec { color: var(--vec-l); }
+    .text-green { color: var(--green); }
+    .fw-600 { font-weight: 600; }
+
+    /* ── Animations ────────────────────────────────────────────────────────── */
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(.92); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .5; }
+    }
+
+    /* ── Header ────────────────────────────────────────────────────────────── */
+    .header {
+      padding: 18px 32px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--wiki), var(--vec));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .logo-name { font-size: 16px; font-weight: 700; letter-spacing: -.3px; }
+    .logo-sub  { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .badge {
+      font-size: 11px; font-weight: 500;
+      padding: 5px 14px; border-radius: 20px;
+      background: linear-gradient(135deg, rgba(139,92,246,.15), rgba(59,130,246,.15));
+      border: 1px solid var(--border);
+      color: var(--wiki-l);
+    }
+
+    /* ── Steps ─────────────────────────────────────────────────────────────── */
+    .steps {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0; padding: 16px 32px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .step {
+      display: flex; align-items: center; gap: 8px;
+      color: var(--muted); font-size: 12px; font-weight: 500;
+      transition: color .3s;
+    }
+    .step.active { color: var(--text); }
+    .step.done   { color: var(--green); }
+    .step-num {
+      width: 26px; height: 26px; border-radius: 50%;
+      border: 1.5px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600; transition: all .3s;
+    }
+    .step.active .step-num { border-color: var(--wiki); background: var(--wiki-glow); color: var(--wiki-l); }
+    .step.done   .step-num { border-color: var(--green); background: var(--green-glow); color: var(--green); }
+    .step-line   { width: 64px; height: 1px; background: var(--border); margin: 0 10px; }
+
+    /* ── Layout ────────────────────────────────────────────────────────────── */
+    .workspace {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 20px;
+      padding: 20px 32px;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    /* ── Card ──────────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .card + .card { margin-top: 14px; }
+    .card-head {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600; font-size: 12px; letter-spacing: .3px;
+      text-transform: uppercase; color: var(--muted);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-body { padding: 16px; }
+
+    /* ── Upload zone ───────────────────────────────────────────────────────── */
+    .drop-zone {
+      position: relative;
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 28px 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+    }
+    .drop-zone:hover, .drop-zone.over {
+      border-color: var(--wiki);
+      background: var(--wiki-glow);
+    }
+    .drop-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+      width: 100%; height: 100%;
+    }
+    .drop-icon  { font-size: 28px; display: block; margin-bottom: 8px; }
+    .drop-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+    .drop-sub   { font-size: 11px; color: var(--muted); }
+
+    /* ── Buttons ───────────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 8px 14px; border-radius: 8px; border: none;
+      font-size: 12px; font-weight: 500; transition: all .2s;
+    }
+    .btn-ghost {
+      background: transparent; border: 1px solid var(--border); color: var(--text);
+    }
+    .btn-ghost:hover { border-color: var(--wiki); color: var(--wiki-l); }
+    .btn-primary {
+      background: var(--wiki); color: #fff; width: 100%; font-size: 13px; padding: 10px;
+    }
+    .btn-primary:hover  { background: var(--wiki-l); }
+    .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ── File chips ────────────────────────────────────────────────────────── */
+    .file-list { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+    .file-chip {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 10px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 7px;
+      font-size: 11px; animation: slideDown .2s ease;
+    }
+    .file-chip .fname { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-chip .fsize { color: var(--muted); flex-shrink: 0; }
+
+    /* ── Right panel ───────────────────────────────────────────────────────── */
+    .right-panel { display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── Stat cards ────────────────────────────────────────────────────────── */
+    .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .stat {
+      padding: 14px 16px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--card);
+    }
+    .stat.wiki-stat { background: var(--wiki-glow); border-color: var(--wiki-border); }
+    .stat.vec-stat  { background: var(--vec-glow);  border-color: var(--vec-border);  }
+    .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 4px; }
+    .stat-value { font-size: 28px; font-weight: 700; line-height: 1; }
+    .wiki-stat .stat-value { color: var(--wiki-l); }
+    .vec-stat  .stat-value { color: var(--vec-l);  }
+    .stat-sub  { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+    /* ── Progress bars ─────────────────────────────────────────────────────── */
+    .prog-row   { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+    .prog-label { font-size: 10px; color: var(--muted); width: 44px; flex-shrink: 0; }
+    .prog-track {
+      flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden;
+    }
+    .prog-fill  { height: 100%; border-radius: 3px; transition: width .4s ease; width: 0%; }
+    .wiki-fill  { background: linear-gradient(90deg, var(--wiki), var(--wiki-l)); }
+    .vec-fill   { background: linear-gradient(90deg, var(--vec), var(--vec-l)); }
+    .prog-pct   { font-size: 10px; color: var(--muted); width: 28px; text-align: right; }
+
+    /* ── Phase label ───────────────────────────────────────────────────────── */
+    .phase-msg { font-size: 11px; color: var(--muted); margin-top: 3px; min-height: 16px; }
+
+    /* ── Spinner ───────────────────────────────────────────────────────────── */
+    .spinner {
+      display: inline-block; width: 12px; height: 12px;
+      border: 2px solid var(--border); border-top-color: var(--wiki);
+      border-radius: 50%; animation: spin .7s linear infinite;
+    }
+
+    /* ── Wiki entry cards ──────────────────────────────────────────────────── */
+    .entries-wrap {
+      max-height: 320px; overflow-y: auto;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px;
+    }
+    .entry-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--wiki);
+      border-radius: 8px; padding: 11px;
+      animation: popIn .25s ease;
+    }
+    .entry-title   { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+    .entry-summary {
+      font-size: 11px; color: var(--muted);
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .cat-badge {
+      display: inline-block; padding: 2px 7px; border-radius: 4px;
+      font-size: 9px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase;
+    }
+    .cat-product    { background: rgba(16,185,129,.15);  color: #10b981; }
+    .cat-policy     { background: rgba(245,158,11,.15);  color: #f59e0b; }
+    .cat-faq        { background: rgba(59,130,246,.15);  color: #60a5fa; }
+    .cat-brand      { background: rgba(139,92,246,.15);  color: #a78bfa; }
+    .cat-feature    { background: rgba(236,72,153,.15);  color: #f472b6; }
+    .cat-navigation { background: rgba(100,116,139,.15); color: #94a3b8; }
+
+    .empty-state { text-align: center; padding: 32px 16px; color: var(--muted); }
+    .empty-state .icon { font-size: 28px; margin-bottom: 8px; }
+    .empty-state p { font-size: 11px; }
+
+    /* ── Separator ─────────────────────────────────────────────────────────── */
+    .sep { height: 1px; background: var(--border); margin: 12px 0; }
+
+    /* ── Search bar ────────────────────────────────────────────────────────── */
+    .search-section {
+      padding: 0 32px 18px;
+      max-width: 1440px; margin: 0 auto;
+    }
+    .search-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+    }
+    .search-row { display: flex; gap: 8px; }
+    .search-input {
+      flex: 1; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 11px 15px; color: var(--text);
+      font-size: 13px; outline: none; transition: border-color .2s;
+    }
+    .search-input:focus  { border-color: var(--wiki); }
+    .search-input::placeholder { color: var(--muted); }
+    .btn-ask {
+      background: var(--wiki); color: #fff; border: none;
+      border-radius: 8px; padding: 11px 22px;
+      font-size: 13px; font-weight: 500; white-space: nowrap;
+      transition: background .2s;
+    }
+    .btn-ask:hover    { background: var(--wiki-l); }
+    .btn-ask:disabled { opacity: .45; cursor: not-allowed; }
+
+    .examples { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .ex-pill {
+      padding: 4px 10px; border-radius: 20px;
+      background: var(--surface); border: 1px solid var(--border);
+      font-size: 11px; color: var(--muted); cursor: pointer;
+      transition: all .2s;
+    }
+    .ex-pill:hover { border-color: var(--wiki); color: var(--wiki-l); }
+
+    /* ── Results ───────────────────────────────────────────────────────────── */
+    .results-section {
+      padding: 0 32px 24px;
+      max-width: 1440px; margin: 0 auto;
+    }
+    .results-label {
+      font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
+      color: var(--muted); margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    /* ── Result card ───────────────────────────────────────────────────────── */
+    .res-card {
+      border-radius: 12px; border: 1px solid var(--border);
+      background: var(--card); overflow: hidden;
+      animation: fadeUp .35s ease;
+    }
+    .res-card.wiki-card { border-color: var(--wiki-border); }
+    .res-card.vec-card  { border-color: var(--vec-border);  }
+
+    .res-head {
+      padding: 11px 16px;
+      display: flex; align-items: center; gap: 8px;
+      font-weight: 600; font-size: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+    .wiki-card .res-head { background: var(--wiki-glow); color: var(--wiki-l); }
+    .vec-card  .res-head { background: var(--vec-glow);  color: var(--vec-l);  }
+    .res-head-sub { font-size: 10px; font-weight: 400; margin-left: auto; opacity: .7; }
+
+    .res-answer {
+      padding: 14px 16px;
+      font-size: 13px; line-height: 1.75;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sources-head {
+      font-size: 10px; text-transform: uppercase; letter-spacing: .5px;
+      color: var(--muted); margin-bottom: 7px;
+    }
+    .sources-section { padding: 11px 16px; border-bottom: 1px solid var(--border); }
+    .src-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .src-chip {
+      display: inline-block; padding: 3px 8px; border-radius: 5px; font-size: 11px;
+    }
+    .wiki-card .src-chip { background: var(--wiki-glow); border: 1px solid var(--wiki-border); color: var(--wiki-l); }
+    .vec-card  .src-chip { background: var(--vec-glow);  border: 1px solid var(--vec-border);  color: var(--vec-l); font-family: monospace; font-size: 10px; }
+
+    /* ── Scores ────────────────────────────────────────────────────────────── */
+    .scores-section { padding: 12px 16px; }
+    .score-row { display: flex; align-items: center; gap: 9px; margin-bottom: 7px; }
+    .score-lbl { font-size: 11px; color: var(--muted); width: 88px; flex-shrink: 0; }
+    .score-track {
+      flex: 1; height: 7px; background: var(--border); border-radius: 4px; overflow: hidden;
+    }
+    .score-fill {
+      height: 100%; border-radius: 4px; transition: width .8s cubic-bezier(.22,1,.36,1) .1s; width: 0%;
+    }
+    .wiki-card .score-fill { background: linear-gradient(90deg, var(--wiki), var(--wiki-l)); }
+    .vec-card  .score-fill { background: linear-gradient(90deg, var(--vec),  var(--vec-l));  }
+    .score-num { font-size: 11px; font-weight: 600; width: 24px; text-align: right; }
+
+    .overall-row {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+    }
+    .overall-num { font-size: 32px; font-weight: 700; line-height: 1; }
+    .wiki-card .overall-num { color: var(--wiki-l); }
+    .vec-card  .overall-num { color: var(--vec-l);  }
+    .overall-lbl { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+    .stars { font-size: 15px; margin-bottom: 2px; }
+    .score-5 { font-size: 10px; color: var(--muted); }
+
+    /* ── Verdict ───────────────────────────────────────────────────────────── */
+    .verdict-section { padding: 0 32px 32px; max-width: 1440px; margin: 0 auto; }
+    .verdict-banner {
+      padding: 18px 22px; border-radius: 12px;
+      background: var(--green-glow); border: 1px solid rgba(16,185,129,.3);
+      display: flex; align-items: center; gap: 16px;
+      animation: fadeUp .4s ease .15s both;
+    }
+    .verdict-banner.tie  { background: rgba(245,158,11,.08); border-color: rgba(245,158,11,.3); }
+    .verdict-banner.vec  { background: var(--vec-glow); border-color: var(--vec-border); }
+    .verdict-icon { font-size: 36px; flex-shrink: 0; }
+    .verdict-title { font-size: 15px; font-weight: 700; color: var(--green); margin-bottom: 3px; }
+    .verdict-banner.tie  .verdict-title { color: var(--amber); }
+    .verdict-banner.vec  .verdict-title { color: var(--vec-l); }
+    .verdict-text { font-size: 12px; color: var(--muted); }
+
+    /* ── Feedback & Improve ────────────────────────────────────────────────── */
+    .feedback-section {
+      padding: 0 32px 32px;
+      max-width: 1440px; margin: 0 auto;
+    }
+    .feedback-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px 20px;
+      display: flex; align-items: center; flex-wrap: wrap; gap: 16px;
+      animation: fadeUp .4s ease .3s both;
+    }
+    .feedback-label { font-size: 12px; color: var(--muted); }
+    .star-row { display: flex; gap: 4px; }
+    .star {
+      font-size: 22px; cursor: pointer; color: var(--border-light);
+      transition: color .15s, transform .15s;
+      user-select: none;
+    }
+    .star:hover, .star.active { color: var(--amber); transform: scale(1.15); }
+    .btn-submit-fb {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text); border-radius: 8px; padding: 7px 14px;
+      font-size: 12px; font-weight: 500; transition: all .2s;
+    }
+    .btn-submit-fb:hover:not(:disabled) { border-color: var(--wiki); color: var(--wiki-l); }
+    .btn-submit-fb:disabled { opacity: .4; cursor: not-allowed; }
+    .fb-note { font-size: 11px; color: var(--muted); }
+    .fb-note.ok     { color: var(--green); }
+    .fb-note.err    { color: #f87171; }
+
+    .improve-divider { width: 1px; height: 32px; background: var(--border); }
+
+    .btn-improve {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); border-radius: 8px; padding: 7px 14px;
+      font-size: 12px; font-weight: 500; transition: all .2s; white-space: nowrap;
+    }
+    .btn-improve.has-pending { border-color: var(--amber); color: var(--amber); }
+    .btn-improve:hover { border-color: var(--green); color: var(--green); }
+
+    /* ── Architecture note ─────────────────────────────────────────────────── */
+    .arch-note {
+      padding: 0 32px 40px;
+      max-width: 1440px; margin: 0 auto;
+    }
+    .arch-inner {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 18px;
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .arch-diagram {
+      font-family: monospace; font-size: 11px; color: var(--muted);
+      white-space: pre; line-height: 1.5; flex-shrink: 0;
+    }
+    .arch-text { font-size: 11px; color: var(--muted); line-height: 1.7; }
+    .arch-text strong { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────────────────────── -->
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">🧠</div>
+    <div>
+      <div class="logo-name">AskVio Wiki Memory</div>
+      <div class="logo-sub">Wiki vs. Vector — live retrieval comparison</div>
+    </div>
+  </div>
+  <div class="badge">Cognee × Redis Hackathon 2026</div>
+</header>
+
+<!-- ── Steps ──────────────────────────────────────────────────────────────── -->
+<div class="steps">
+  <div class="step active" id="step1">
+    <div class="step-num">1</div><span>Load Pages</span>
+  </div>
+  <div class="step-line"></div>
+  <div class="step" id="step2">
+    <div class="step-num">2</div><span>Build KB</span>
+  </div>
+  <div class="step-line"></div>
+  <div class="step" id="step3">
+    <div class="step-num">3</div><span>Ask &amp; Compare</span>
+  </div>
+</div>
+
+<!-- ── Workspace ──────────────────────────────────────────────────────────── -->
+<div class="workspace">
+
+  <!-- Left: upload -->
+  <div>
+    <div class="card">
+      <div class="card-head">📁 Pages</div>
+      <div class="card-body">
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="fileInput" accept=".html,.htm" multiple>
+          <span class="drop-icon">⬆️</span>
+          <div class="drop-title">Drop HTML files here</div>
+          <div class="drop-sub">or click to browse</div>
+        </div>
+
+        <div style="margin:10px 0;text-align:center;font-size:10px;color:var(--muted);">— or —</div>
+
+        <button class="btn btn-ghost w-full" onclick="useSamples()">
+          🛍️ Use sample ecommerce pages
+        </button>
+
+        <div class="file-list" id="fileList"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="card-body">
+        <button class="btn btn-primary" id="buildBtn" onclick="buildKB()" disabled>
+          ⚡ Build Knowledge Base
+        </button>
+        <div class="phase-msg" id="buildMsg" style="margin-top:8px;text-align:center;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: stats + entries -->
+  <div class="right-panel">
+
+    <div class="stat-row">
+      <!-- Wiki stat -->
+      <div class="stat wiki-stat">
+        <div class="stat-label">🟣 Wiki entries</div>
+        <div class="stat-value" id="wikiCount">0</div>
+        <div class="stat-sub" id="wikiSub">Not built yet</div>
+        <div class="prog-row">
+          <div class="prog-track" style="flex:1;">
+            <div class="prog-fill wiki-fill" id="wikiProg"></div>
+          </div>
+          <div class="prog-pct" id="wikiPct"></div>
+        </div>
+      </div>
+      <!-- Vector stat -->
+      <div class="stat vec-stat">
+        <div class="stat-label">🔵 Vector chunks</div>
+        <div class="stat-value" id="vecCount">0</div>
+        <div class="stat-sub" id="vecSub">Not built yet</div>
+        <div class="prog-row">
+          <div class="prog-track" style="flex:1;">
+            <div class="prog-fill vec-fill" id="vecProg"></div>
+          </div>
+          <div class="prog-pct" id="vecPct"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="flex:1;">
+      <div class="card-head">
+        🟣 Extracted Wiki Entries
+        <span id="buildSpinner" class="spinner hidden" style="margin-left:4px;"></span>
+      </div>
+      <div class="card-body">
+        <div class="entries-wrap" id="entriesWrap">
+          <div class="empty-state">
+            <div class="icon">🗂️</div>
+            <p>Upload pages and build<br>the knowledge base to see<br>extracted wiki entries here</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Search ─────────────────────────────────────────────────────────────── -->
+<div class="search-section">
+  <div class="search-card">
+    <div class="search-row">
+      <input class="search-input" id="searchInput" type="text"
+        placeholder="Ask a customer question, e.g. What is your return policy?"
+        onkeydown="if(event.key==='Enter') doSearch()">
+      <button class="btn-ask" id="askBtn" onclick="doSearch()" disabled>Ask →</button>
+    </div>
+    <div class="examples" id="examples"></div>
+  </div>
+</div>
+
+<!-- ── Results ────────────────────────────────────────────────────────────── -->
+<div class="results-section hidden" id="resultsSection">
+  <div class="results-label">
+    <span id="resultsSpinner" class="spinner hidden"></span>
+    Comparing retrieval strategies for: <em id="resultsQuery" style="color:var(--text);"></em>
+  </div>
+  <div class="results-grid">
+
+    <!-- Wiki result card -->
+    <div class="res-card wiki-card">
+      <div class="res-head">
+        🟣 Wiki Answer
+        <span class="res-head-sub">Structured knowledge graph</span>
+      </div>
+      <div class="res-answer" id="wikiAnswer">
+        <span style="color:var(--muted);animation:pulse 1.2s infinite;">Generating…</span>
+      </div>
+      <div class="sources-section">
+        <div class="sources-head">Wiki entries used</div>
+        <div class="src-chips" id="wikiSources"></div>
+      </div>
+      <div class="scores-section">
+        <div class="score-row">
+          <span class="score-lbl">Accuracy</span>
+          <div class="score-track"><div class="score-fill" id="wAcc"></div></div>
+          <span class="score-num" id="wAccV">—</span>
+        </div>
+        <div class="score-row">
+          <span class="score-lbl">Completeness</span>
+          <div class="score-track"><div class="score-fill" id="wCom"></div></div>
+          <span class="score-num" id="wComV">—</span>
+        </div>
+        <div class="score-row">
+          <span class="score-lbl">Clarity</span>
+          <div class="score-track"><div class="score-fill" id="wCla"></div></div>
+          <span class="score-num" id="wClaV">—</span>
+        </div>
+        <div class="overall-row">
+          <div>
+            <div class="overall-lbl">Overall</div>
+            <div class="overall-num" id="wOverall">—</div>
+            <div class="score-5">out of 5</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="stars" id="wStars"></div>
+            <div class="score-5">LLM judge score</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vector result card -->
+    <div class="res-card vec-card">
+      <div class="res-head">
+        🔵 Vector Answer
+        <span class="res-head-sub">Raw chunk similarity</span>
+      </div>
+      <div class="res-answer" id="vecAnswer">
+        <span style="color:var(--muted);animation:pulse 1.2s infinite;">Generating…</span>
+      </div>
+      <div class="sources-section">
+        <div class="sources-head">Text chunks retrieved</div>
+        <div class="src-chips" id="vecSources"></div>
+      </div>
+      <div class="scores-section">
+        <div class="score-row">
+          <span class="score-lbl">Accuracy</span>
+          <div class="score-track"><div class="score-fill" id="vAcc"></div></div>
+          <span class="score-num" id="vAccV">—</span>
+        </div>
+        <div class="score-row">
+          <span class="score-lbl">Completeness</span>
+          <div class="score-track"><div class="score-fill" id="vCom"></div></div>
+          <span class="score-num" id="vComV">—</span>
+        </div>
+        <div class="score-row">
+          <span class="score-lbl">Clarity</span>
+          <div class="score-track"><div class="score-fill" id="vCla"></div></div>
+          <span class="score-num" id="vClaV">—</span>
+        </div>
+        <div class="overall-row">
+          <div>
+            <div class="overall-lbl">Overall</div>
+            <div class="overall-num" id="vOverall">—</div>
+            <div class="score-5">out of 5</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="stars" id="vStars"></div>
+            <div class="score-5">LLM judge score</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Verdict ────────────────────────────────────────────────────────────── -->
+<div class="verdict-section hidden" id="verdictSection">
+  <div class="verdict-banner" id="verdictBanner">
+    <div class="verdict-icon" id="verdictIcon">🏆</div>
+    <div>
+      <div class="verdict-title" id="verdictTitle">—</div>
+      <div class="verdict-text" id="verdictText"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Feedback & Improve ──────────────────────────────────────────────────── -->
+<div class="feedback-section hidden" id="feedbackSection">
+  <div class="feedback-card">
+    <span class="feedback-label">Rate the Wiki answer:</span>
+    <div class="star-row" id="starRow">
+      <span class="star" data-v="1">★</span>
+      <span class="star" data-v="2">★</span>
+      <span class="star" data-v="3">★</span>
+      <span class="star" data-v="4">★</span>
+      <span class="star" data-v="5">★</span>
+    </div>
+    <button class="btn-submit-fb" id="submitFbBtn" onclick="submitFeedback()" disabled>
+      Submit feedback
+    </button>
+    <span class="fb-note" id="fbNote"></span>
+
+    <div class="improve-divider"></div>
+
+    <button class="btn-improve" id="improveBtn" onclick="applyImprovements()">
+      🔧 Apply improvements (<span id="pendingCount">0</span>)
+    </button>
+    <span class="fb-note" id="improveNote"></span>
+  </div>
+</div>
+
+<!-- ── Architecture note ───────────────────────────────────────────────────── -->
+<div class="arch-note">
+  <div class="arch-inner">
+    <pre class="arch-diagram">HTML pages
+    │
+    ▼  session_id →
+[ Redis ]          ← raw pages (fast scratchpad)
+    │
+    │  distillation
+    ▼
+[ Cognee graph ]   ← wiki entries (permanent)
+    │
+    ├─ GRAPH_COMPLETION → Wiki answer
+    └─ CHUNKS          → Vector answer
+    │
+    └─ SkillRunEntry → improve()</pre>
+    <div class="arch-text">
+      <strong>How Cognee is used here:</strong><br>
+      Raw HTML lands in <strong>Redis</strong> first via <code>cognee.remember(..., session_id=)</code> — the fast, ephemeral scratchpad.<br>
+      GPT then distils each page into structured wiki entries, which are stored in <strong>Cognee's permanent knowledge graph</strong> via <code>cognee.remember(entry)</code>.<br>
+      At query time, <code>cognee.search(SearchType.GRAPH_COMPLETION)</code> traverses the graph (wiki) while
+      <code>cognee.search(SearchType.CHUNKS)</code> does raw cosine similarity (vector baseline).<br>
+      Low ratings trigger a <strong>SkillRunEntry</strong> — Cognee proposes a rewrite of the <code>query/SKILL.md</code>, which you apply with the button above.
+    </div>
+  </div>
+</div>
+
+<!-- ── Script ─────────────────────────────────────────────────────────────── -->
+<script>
+const EXAMPLES = [
+  "What is your return policy?",
+  "How long does shipping take?",
+  "What payment methods do you accept?",
+  "Do you ship internationally?",
+  "Is there a warranty on your products?",
+  "How do I track my order?",
+];
+
+const CAT_CLASS = {
+  product:'cat-product', policy:'cat-policy', faq:'cat-faq',
+  brand:'cat-brand', feature:'cat-feature', navigation:'cat-navigation',
+};
+
+// ── Feedback state ──────────────────────────────────────────────────────────
+let _currentQuery  = '';
+let _currentAnswer = '';
+let _selectedStar  = 0;
+
+// ── Example pills ───────────────────────────────────────────────────────────
+EXAMPLES.forEach(q => {
+  const el = document.createElement('span');
+  el.className = 'ex-pill';
+  el.textContent = q;
+  el.onclick = () => { document.getElementById('searchInput').value = q; };
+  document.getElementById('examples').appendChild(el);
+});
+
+// ── Star rating ─────────────────────────────────────────────────────────────
+document.getElementById('starRow').addEventListener('click', e => {
+  const star = e.target.closest('.star');
+  if (!star) return;
+  _selectedStar = parseInt(star.dataset.v);
+  document.querySelectorAll('.star').forEach(s => {
+    s.classList.toggle('active', parseInt(s.dataset.v) <= _selectedStar);
+  });
+  document.getElementById('submitFbBtn').disabled = false;
+  document.getElementById('fbNote').textContent = '';
+});
+
+// ── Step indicator ──────────────────────────────────────────────────────────
+function setStep(n) {
+  [1, 2, 3].forEach(i => {
+    const el = document.getElementById('step' + i);
+    el.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+    el.querySelector('.step-num').textContent = i < n ? '✓' : String(i);
+  });
+}
+
+// ── Drag & drop ─────────────────────────────────────────────────────────────
+const dropZone  = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+fileInput.addEventListener('change', () => uploadFiles(Array.from(fileInput.files)));
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('over');
+  uploadFiles(Array.from(e.dataTransfer.files).filter(f => /\.html?$/i.test(f.name)));
+});
+
+async function uploadFiles(files) {
+  if (!files.length) return;
+  const fd = new FormData();
+  files.forEach(f => fd.append('files', f));
+  const r = await fetch('/api/upload', { method: 'POST', body: fd });
+  const d = await r.json();
+  renderFiles(d.files);
+  document.getElementById('buildBtn').disabled = false;
+  setStep(2);
+}
+
+async function useSamples() {
+  const r = await fetch('/api/use-samples', { method: 'POST' });
+  const d = await r.json();
+  renderFiles(d.files);
+  document.getElementById('buildBtn').disabled = false;
+  setStep(2);
+}
+
+function renderFiles(files) {
+  const list = document.getElementById('fileList');
+  list.innerHTML = '';
+  files.forEach(f => {
+    const el = document.createElement('div');
+    el.className = 'file-chip';
+    el.innerHTML = `<span>📄</span><span class="fname">${f.filename}</span><span class="fsize">${(f.chars/1000).toFixed(1)}k</span>`;
+    list.appendChild(el);
+  });
+}
+
+// ── Build KB ────────────────────────────────────────────────────────────────
+async function buildKB() {
+  const btn = document.getElementById('buildBtn');
+  btn.disabled = true; btn.textContent = '⏳ Building…';
+  document.getElementById('buildSpinner').classList.remove('hidden');
+  document.getElementById('buildMsg').textContent = '';
+
+  document.getElementById('entriesWrap').innerHTML = '';
+  ['wikiCount','vecCount'].forEach(id => document.getElementById(id).textContent = '0');
+  ['wikiProg','vecProg'].forEach(id => document.getElementById(id).style.width = '0%');
+  ['wikiPct','vecPct'].forEach(id => document.getElementById(id).textContent = '');
+  document.getElementById('wikiSub').textContent = 'Starting…';
+  document.getElementById('vecSub').textContent  = 'Waiting…';
+
+  let wikiCount = 0;
+
+  const resp   = await fetch('/api/build', { method: 'POST' });
+  const reader = resp.body.getReader();
+  const dec    = new TextDecoder();
+  let buf = '';
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      try { handleBuildEvent(JSON.parse(line.slice(6))); } catch (_) {}
+    }
+  }
+
+  function setProg(phase, pct, msg) {
+    const isW = phase === 'wiki';
+    document.getElementById(isW ? 'wikiProg' : 'vecProg').style.width = pct + '%';
+    document.getElementById(isW ? 'wikiPct'  : 'vecPct').textContent  = pct + '%';
+    if (msg) document.getElementById(isW ? 'wikiSub' : 'vecSub').textContent = msg;
+  }
+
+  function handleBuildEvent(ev) {
+    if (ev.type === 'phase') {
+      if (ev.phase === 'wiki')   setProg('wiki',   5, 'Extracting entries via GPT…');
+      if (ev.phase === 'vector') setProg('vector', 5, 'Ingesting raw text for CHUNKS search…');
+    }
+    if (ev.type === 'progress') {
+      const pct = ev.step ? Math.round(ev.step / ev.total * 75) + 10 : 80;
+      setProg(ev.phase, pct, ev.message || `File ${ev.step}/${ev.total}`);
+    }
+    if (ev.type === 'wiki_entry') {
+      wikiCount++;
+      document.getElementById('wikiCount').textContent = wikiCount;
+      renderEntry(ev.entry);
+    }
+    if (ev.type === 'phase_done') {
+      if (ev.phase === 'wiki') {
+        setProg('wiki', 100, `${ev.count} entries → Cognee graph`);
+      } else {
+        document.getElementById('vecCount').textContent = ev.count;
+        setProg('vector', 100, `~${ev.count} chunks → Cognee store`);
+      }
+    }
+    if (ev.type === 'log') {
+      // surface Cognee notes in the build message area
+      document.getElementById('buildMsg').textContent = ev.message;
+    }
+    if (ev.type === 'done') {
+      btn.disabled = false; btn.textContent = '🔄 Rebuild KB';
+      document.getElementById('buildSpinner').classList.add('hidden');
+      document.getElementById('buildMsg').textContent = '✅ Cognee graph ready — ask away';
+      document.getElementById('askBtn').disabled = false;
+      setStep(3);
+    }
+  }
+}
+
+function renderEntry(entry) {
+  const wrap = document.getElementById('entriesWrap');
+  const cat  = (entry.category || 'feature').toLowerCase();
+  const el   = document.createElement('div');
+  el.className = 'entry-card';
+  el.innerHTML = `
+    <div class="entry-title">${entry.title || 'Untitled'}</div>
+    <div class="entry-summary">${entry.summary || ''}</div>
+    <span class="cat-badge ${CAT_CLASS[cat] || 'cat-feature'}">${cat}</span>
+  `;
+  wrap.appendChild(el);
+}
+
+// ── Search ──────────────────────────────────────────────────────────────────
+async function doSearch() {
+  const query = document.getElementById('searchInput').value.trim();
+  if (!query) return;
+
+  _currentQuery  = query;
+  _currentAnswer = '';
+  _selectedStar  = 0;
+
+  const btn = document.getElementById('askBtn');
+  btn.disabled = true; btn.textContent = 'Searching…';
+
+  // Hide feedback + verdict while searching
+  document.getElementById('feedbackSection').classList.add('hidden');
+  document.getElementById('verdictSection').classList.add('hidden');
+  document.getElementById('resultsSpinner').classList.remove('hidden');
+  document.getElementById('resultsQuery').textContent = query;
+  document.getElementById('resultsSection').classList.remove('hidden');
+
+  // Reset
+  ['wikiAnswer','vecAnswer','wikiSources','vecSources'].forEach(id => {
+    document.getElementById(id).innerHTML =
+      '<span style="color:var(--muted);animation:pulse 1.2s infinite;">Searching Cognee…</span>';
+  });
+  ['wAcc','wCom','wCla','vAcc','vCom','vCla'].forEach(id =>
+    document.getElementById(id).style.width = '0%');
+  ['wAccV','wComV','wClaV','vAccV','vComV','vClaV','wOverall','vOverall','wStars','vStars']
+    .forEach(id => document.getElementById(id).textContent = '—');
+
+  // Reset star UI
+  document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
+  document.getElementById('submitFbBtn').disabled = true;
+  document.getElementById('fbNote').textContent   = '';
+  document.getElementById('improveNote').textContent = '';
+
+  document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const r = await fetch('/api/search', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ query }),
+  });
+  const d = await r.json();
+
+  document.getElementById('resultsSpinner').classList.add('hidden');
+
+  // Wiki answer
+  _currentAnswer = d.wiki.answer;
+  document.getElementById('wikiAnswer').innerHTML = d.wiki.answer.replace(/\n/g, '<br>');
+  const wSrc = document.getElementById('wikiSources');
+  wSrc.innerHTML = '';
+  d.wiki.sources.forEach(s => {
+    const chip = document.createElement('span');
+    chip.className = 'src-chip';
+    chip.textContent = s.title;
+    chip.title = s.summary;
+    wSrc.appendChild(chip);
+  });
+
+  // Vector answer
+  document.getElementById('vecAnswer').innerHTML = d.vector.answer.replace(/\n/g, '<br>');
+  const vSrc = document.getElementById('vecSources');
+  vSrc.innerHTML = '';
+  d.vector.sources.forEach(s => {
+    const chip = document.createElement('span');
+    chip.className = 'src-chip';
+    chip.textContent = s.text;
+    chip.title = `Source: ${s.source}`;
+    vSrc.appendChild(chip);
+  });
+
+  // Animate scores
+  requestAnimationFrame(() => {
+    const ws = d.wiki.scores, vs = d.vector.scores;
+    setScore('wAcc','wAccV', ws.accuracy);
+    setScore('wCom','wComV', ws.completeness);
+    setScore('wCla','wClaV', ws.clarity);
+    setScore('vAcc','vAccV', vs.accuracy);
+    setScore('vCom','vComV', vs.completeness);
+    setScore('vCla','vClaV', vs.clarity);
+    document.getElementById('wOverall').textContent = d.wiki.avg.toFixed(1);
+    document.getElementById('vOverall').textContent = d.vector.avg.toFixed(1);
+    document.getElementById('wStars').textContent   = toStars(d.wiki.avg);
+    document.getElementById('vStars').textContent   = toStars(d.vector.avg);
+  });
+
+  // Verdict
+  const wWins = d.wiki.avg > d.vector.avg;
+  const tie   = d.wiki.avg === d.vector.avg;
+  const banner = document.getElementById('verdictBanner');
+  banner.className = 'verdict-banner' + (tie ? ' tie' : wWins ? '' : ' vec');
+  document.getElementById('verdictIcon').textContent  = tie ? '🤝' : wWins ? '🏆' : '⚡';
+  document.getElementById('verdictTitle').textContent = tie ? "It's a tie!" : wWins ? 'Wiki wins!' : 'Vector wins!';
+  document.getElementById('verdictText').textContent  = d.verdict;
+  document.getElementById('verdictSection').classList.remove('hidden');
+
+  // Show feedback bar
+  document.getElementById('feedbackSection').classList.remove('hidden');
+
+  // Poll pending proposals count
+  refreshPendingCount();
+
+  btn.disabled = false; btn.textContent = 'Ask →';
+}
+
+// ── Feedback → SkillRunEntry ─────────────────────────────────────────────────
+async function submitFeedback() {
+  if (!_selectedStar || !_currentQuery) return;
+
+  const btn = document.getElementById('submitFbBtn');
+  btn.disabled = true; btn.textContent = 'Sending…';
+
+  const r = await fetch('/api/feedback', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({
+      query:  _currentQuery,
+      answer: _currentAnswer,
+      score:  _selectedStar,
+    }),
+  });
+  const d = await r.json();
+
+  const note = document.getElementById('fbNote');
+  if (d.ok) {
+    note.className   = 'fb-note ok';
+    note.textContent = `✓ Recorded — ${d.pending} improvement${d.pending !== 1 ? 's' : ''} pending`;
+    refreshPendingCount(d.pending);
+  } else {
+    note.className   = 'fb-note err';
+    note.textContent = d.error || 'Error recording feedback';
+    btn.disabled = false;
+  }
+  btn.textContent = 'Submitted ✓';
+}
+
+// ── Apply improvements ────────────────────────────────────────────────────────
+async function applyImprovements() {
+  const btn  = document.getElementById('improveBtn');
+  const note = document.getElementById('improveNote');
+  btn.textContent = 'Applying…';
+
+  const r = await fetch('/api/improve', { method: 'POST' });
+  const d = await r.json();
+
+  note.className   = 'fb-note' + (d.ok ? ' ok' : ' err');
+  note.textContent = d.ok ? `✓ ${d.message}` : d.error;
+  btn.textContent  = 'Apply improvements (0)';
+  refreshPendingCount(0);
+}
+
+async function refreshPendingCount(override) {
+  let n = override;
+  if (n === undefined) {
+    try {
+      const r = await fetch('/api/status');
+      const d = await r.json();
+      n = d.pending;
+    } catch (_) { n = 0; }
+  }
+  document.getElementById('pendingCount').textContent = n;
+  const btn = document.getElementById('improveBtn');
+  btn.classList.toggle('has-pending', n > 0);
+}
+
+// ── Utilities ────────────────────────────────────────────────────────────────
+function setScore(barId, valId, score) {
+  document.getElementById(barId).style.width    = (score / 5 * 100) + '%';
+  document.getElementById(valId).textContent    = score + '/5';
+}
+
+function toStars(avg) {
+  const full = Math.floor(avg);
+  const half = (avg - full) >= 0.3 ? 1 : 0;
+  return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(5 - full - half);
+}
+</script>
+</body>
+</html>
